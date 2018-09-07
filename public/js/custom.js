@@ -2,13 +2,12 @@
 const configs = {}
 	
 	//steem configs
-	configs.steem_account = "steemitblog";
+	configs.steem_account = "saflt";
 	configs.steem_api = "https://api.steemit.com";
 	configs.steem_app = "https://steemit.com/";
 	//configs.steem_app = "https://busy.org/"; //to use busy.org
 	//configs.steem_app = "https://steempeak.com/"; //to use steempeak.com
-	configs.homepage_post_limit = 4;
-	configs.blogpage_post_limit = 10;
+	configs.homepage_post_limit = 10;
 	
 	//social configs
 	configs.facebook = "https://facebook.com/";
@@ -16,52 +15,167 @@ const configs = {}
 	configs.linkedin = "https://linkedin.com/";
 	configs.business = "https://www.peerquery.com/@" + configs.steem_account;
 	
-	//contact
-	configs.email = "some@one.me";
-	configs.tel = "+233 000 000"; 
-	configs.fb = "facebook";
-	
-//load partials section comes after global configs have been set
-$("#navbar").load("partials/navbar.html");		//load the navbar!!!
-$("#footer").load("partials/footer.html");		//load the footer!!!
-
 
 $( window ).on( "load", function() {
 	
-	function site_up() {
-		
+	$('#more').attr('href', configs.steem_app + '@' + configs.steem_account);
 	
-		//terms and condition modal and cookie
-		function TermsAndConditions(){
-			days=60;
-			myDate = new Date();
-			myDate.setTime(myDate.getTime()+(days*24*60*60*1000));
-			document.cookie = 'TermsAndConditions=Accepted; expires=' + myDate.toGMTString();
-		}
+	//set extremal profile links
+	$("#steemit-profile").attr('href', "https://steemit.com/@" + configs.steem_account);
+	$("#busy-profile").attr('href', "https://busy.org/@" + configs.steem_account);
+	$("#dtube-profile").attr('href', "https://d.tube/#!/c/" + configs.steem_account);
+	$("#peerquery-profile").attr('href', "https://www.peerquery.com/@" + configs.steem_account);
 	
-		var cookie = document.cookie.split(';')
-			.map(function(x){ return x.trim().split('='); })
-			.filter(function(x){ return x[0]==='TermsAndConditions'; })
-			.pop();
-
-		if(cookie && cookie[1]==='Accepted') {
-			$(".cookie_popup").hide();
+	//follow button
+	$("#follow-button").attr('href', configs.steem_app + "@" + configs.steem_account);
+	
+	//scroll animation
+	$(".scroll").click(function(event){
+		$('html, body').animate({scrollTop: '+=600px'}, 800);
+	});
+	
+	// When the user scrolls down 20px from the top of the document, show the button
+	window.onscroll = function() {scrollFunction()};
+	
+	function scrollFunction() {
+		if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+			document.getElementById("topBtn").style.display = "block";
 		} else {
-			$('.cookie_popup').show();
+			document.getElementById("topBtn").style.display = "none";
 		}
-
-		$('.approveCookie').on('click', function(){
-			TermsAndConditions();
-			$('.cookie_popup').hide();
-			return false;
-		});
-	
-		//scroll animation
-		$(".scroll").click(function(event){
-			$('html, body').animate({scrollTop: '+=600px'}, 800);
-		});
 	}
-	site_up();
+
+	// When the user clicks on the button, scroll to the top of the document
+	$('#topBtn').on("click", function topFunction() {
+		$('html, body').animate({ scrollTop: 0 }, 1200);
+			return false;
+	});
+	
+  
+    var client = new dsteem.Client(configs.steem_api);
+    client.database.getDiscussions('blog', {tag: configs.steem_account, limit: configs.homepage_post_limit}).then(function(discussions){
+		//console.log(discussions);
+		for (var x in discussions) {
+			create_post(discussions[x]);
+		}
+		
+		$('#loader').hide();
+		$('#more').show();
+    });
+	
+	
+	function create_post(post) {
+	
+		var row = document.createElement("div");
+		row.className = "row";
+		
+			var twoColumn = document.createElement("div");
+			twoColumn.className = "two columns";
+		
+				var img = document.createElement("img");
+				img.src = first_img(post.body);
+				img.style.width = "120px";
+				
+			twoColumn.appendChild(img);
+		
+		row.appendChild(twoColumn);
+		
+			var tenColumn = document.createElement("div");
+			tenColumn.className = "ten columns";
+		
+				var row2 = document.createElement("div");
+				row2.className = "row";
+				
+					var tenColumn2 = document.createElement("div");
+					tenColumn2.className = "ten columns";
+		
+						var b = document.createElement("b");
+						b.innerText = post.title;
+				
+					tenColumn2.appendChild(b);
+				
+				row2.appendChild(tenColumn2);
+				
+					var twoColumn2 = document.createElement("div");
+					twoColumn2.className = "two columns";
+				
+						var small = document.createElement("small");
+						small.innerText = new Date(post.created).toDateString();
+					
+					twoColumn2.appendChild(small);
+				
+				row2.appendChild(twoColumn2);
+			
+			tenColumn.appendChild(row2);
+			
+			var p = document.createElement("p");
+				
+				var span = document.createElement("span");
+				span.innerText = parseText(post.body);
+			
+				var br = document.createElement("br");
+			
+				var a = document.createElement("a");
+				a.href = configs.steem_app + post.category + "/@" + post.author + "/" + post.permlink;
+				a.target = "_blank";
+				a.innerText = "Continue reading";
+			
+				p.appendChild(span);
+				p.appendChild(br);
+				p.appendChild(a);
+			
+			tenColumn.appendChild(p);
+		
+		row.appendChild(tenColumn);
+		
+		document.getElementById('posts').appendChild(row);
+		
+	}
+  
+  
+	function first_img(text) {
+		
+		try{
+			var src = text.match(/(https?:\/\/.*\.(?:png|jpg|jpeg|gif|png|svg))/i)[0];
+			if(src !== null || scr !== undefined) return src;
+			return '/public/img/placeholder.png';
+		} catch(err){
+			//console.log(err);
+			return 'public/img/placeholder.png';
+		}
+		
+	}
+  
+  
+	function parseText(html) {
+		
+		var md = new Remarkable({
+			html: true, // Remarkable renders first then sanitize runs...
+			breaks: false,
+			linkify: false, // linkify is done locally
+			typographer: false, // https://github.com/jonschlinkert/remarkable/issues/142#issuecomment-221546793
+			quotes: '“”‘’',
+		});
+		
+		//sanitze html before appending to  '#temp'
+		var safeText = DOMPurify.sanitize(html);
+		
+		$('#temp').html(md.render(safeText));
+		
+		var htmlString = $("#temp").text();
+		var stripedHtml = htmlString.replace(/<[^>]+>/g, '');
+		var stripedNewline = stripedHtml.replace(/\r?\n|\r/g, ' ');
+		var stripeImg = stripedNewline.replace(/(http)?s?:?(\/\/[^"']*\.(?:png|jpg|jpeg|gif|png|svg))/ig, '');
+		var trimHtml = stripeImg.trim();
+		
+		$('#temp').html("");
+		
+		return trimHtml.substring(0, 200) + "... ";
+		
+	}
+  
+	
+	
 	
 });
 
